@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<title>Avalon Voting Chamber</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Cinzel+Decorative:wght@400;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg: #07080d;
+  --surface: #0e1018;
+  --surface2: #141720;
+  --gold: #c9a84c;
+  --gold-dim: #8a6e2e;
+  --gold-bright: #f0cc72;
+  --text: #e8d8b0;
+  --text-dim: #9a8a68;
+  --blue-dark: #0d2145;
+  --blue-mid: #1a3a78;
+  --blue-bright: #3a6fd8;
+  --blue-text: #a8c4f8;
+  --red-dark: #2a0a0a;
+  --red-mid: #6b1515;
+  --red-bright: #c43030;
+  --red-text: #f8a8a8;
+  --border: rgba(201,168,76,0.25);
+  --border-bright: rgba(201,168,76,0.6);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body {
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Crimson Text', Georgia, serif;
+  font-size: 17px;
+  line-height: 1.5;
+  overflow-x: hidden;
+}
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    radial-gradient(ellipse at 20% 0%, rgba(201,168,76,0.06) 0%, transparent 60%),
+    radial-gradient(ellipse at 80% 100%, rgba(26,58,120,0.08) 0%, transparent 60%);
+  pointer-events: none;
+  z-index: 0;
+}
+.app { max-width: 430px; margin: 0 auto; min-height: 100vh; position: relative; z-index: 1; }
+.screen { display: none; padding: 0 0 80px; animation: fadeIn 0.4s ease; }
+.screen.active { display: block; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+.ornament { text-align: center; color: var(--gold-dim); font-size: 13px; letter-spacing: 6px; padding: 6px 0; }
+.divider { display: flex; align-items: center; gap: 12px; padding: 8px 20px; }
+.divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: linear-gradient(to right, transparent, var(--gold-dim), transparent); }
+.divider span { color: var(--gold); font-size: 14px; white-space: nowrap; }
+.hero { text-align: center; padding: 40px 20px 24px; position: relative; }
+.crest { width: 90px; height: 90px; margin: 0 auto 16px; position: relative; }
+.hero-title { font-family: 'Cinzel Decorative', serif; font-size: 22px; font-weight: 700; color: var(--gold-bright); letter-spacing: 1px; line-height: 1.2; text-shadow: 0 0 30px rgba(201,168,76,0.4); }
+.hero-sub { font-family: 'Cinzel', serif; font-size: 11px; color: var(--text-dim); letter-spacing: 3px; text-transform: uppercase; margin-top: 6px; }
+.card { margin: 0 16px 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 2px; padding: 20px; position: relative; }
+.card::before, .card::after { content: '✦'; position: absolute; color: var(--gold-dim); font-size: 10px; }
+.card::before { top: 6px; left: 8px; }
+.card::after { bottom: 6px; right: 8px; }
+.card-title { font-family: 'Cinzel', serif; font-size: 14px; color: var(--gold); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 4px; }
+.card-sub { font-size: 14px; color: var(--text-dim); font-style: italic; margin-bottom: 16px; }
+input[type=text] { width: 100%; background: rgba(0,0,0,0.4); border: 1px solid var(--border); border-radius: 2px; padding: 12px 14px; color: var(--text); font-family: 'Crimson Text', serif; font-size: 16px; margin-bottom: 10px; outline: none; transition: border-color 0.2s; }
+input[type=text]:focus { border-color: var(--gold-dim); }
+input[type=text]::placeholder { color: var(--text-dim); font-style: italic; }
+.btn { width: 100%; padding: 13px 16px; border-radius: 2px; border: 1px solid var(--border-bright); background: rgba(201,168,76,0.08); color: var(--gold); font-family: 'Cinzel', serif; font-size: 13px; letter-spacing: 2px; text-transform: uppercase; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; }
+.btn:hover, .btn:active { background: rgba(201,168,76,0.15); border-color: var(--gold); }
+.btn:active { transform: scale(0.98); }
+.btn-approve { background: var(--blue-dark); border: 2px solid var(--blue-mid); color: var(--blue-text); font-size: 15px; padding: 22px 16px; flex-direction: column; gap: 10px; min-height: 110px; transition: all 0.2s; }
+.btn-approve:hover, .btn-approve:active { background: var(--blue-mid); border-color: var(--blue-bright); box-shadow: 0 0 20px rgba(58,111,216,0.3); }
+.btn-reject { background: var(--red-dark); border: 2px solid var(--red-mid); color: var(--red-text); font-size: 15px; padding: 22px 16px; flex-direction: column; gap: 10px; min-height: 110px; transition: all 0.2s; }
+.btn-reject:hover, .btn-reject:active { background: var(--red-mid); border-color: var(--red-bright); box-shadow: 0 0 20px rgba(196,48,48,0.3); }
+.btn-danger { border-color: rgba(196,48,48,0.4); color: #e87070; background: rgba(196,48,48,0.06); font-size: 12px; }
+.btn-danger:hover { background: rgba(196,48,48,0.15); }
+.btn-sm { padding: 9px 14px; font-size: 11px; letter-spacing: 1px; min-height: 40px; }
+.vote-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 12px 0; }
+.room-header { display: flex; align-items: flex-start; justify-content: space-between; padding: 20px 20px 12px; border-bottom: 1px solid var(--border); margin-bottom: 16px; }
+.room-code-display { font-family: 'Cinzel', serif; font-size: 26px; font-weight: 600; color: var(--gold-bright); letter-spacing: 6px; }
+.room-label { font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: 2px; color: var(--text-dim); text-transform: uppercase; }
+.room-status { font-style: italic; color: var(--text-dim); font-size: 14px; margin-top: 2px; }
+.btn-leave { background: transparent; border: 1px solid var(--border); color: var(--text-dim); border-radius: 2px; padding: 8px 12px; font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: 1px; cursor: pointer; min-height: 40px; transition: all 0.2s; }
+.btn-leave:hover { border-color: var(--red-mid); color: #e87070; }
+.results-hidden { text-align: center; padding: 24px 16px; }
+.results-hidden svg { opacity: 0.35; margin-bottom: 10px; }
+.results-hidden p { color: var(--text-dim); font-style: italic; font-size: 15px; }
+.stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+.stat-box { background: rgba(0,0,0,0.3); border-radius: 2px; padding: 14px 10px; text-align: center; }
+.stat-box.approve { border: 1px solid rgba(58,111,216,0.4); }
+.stat-box.reject  { border: 1px solid rgba(196,48,48,0.4); }
+.stat-num { font-family: 'Cinzel', serif; font-size: 32px; font-weight: 600; }
+.stat-num.approve { color: var(--blue-text); }
+.stat-num.reject  { color: var(--red-text); }
+.stat-label { font-size: 12px; color: var(--text-dim); margin-top: 2px; font-style: italic; }
+.progress-wrap { height: 6px; background: rgba(255,255,255,0.06); border-radius: 3px; overflow: hidden; margin: 4px 0 8px; position: relative; }
+.progress-fill { height: 100%; background: linear-gradient(to right, var(--blue-mid), var(--blue-bright)); border-radius: 3px; transition: width 0.6s ease; position: relative; }
+.progress-labels { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-dim); }
+.voted-count-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+.voted-count-row .label { font-family: 'Cinzel', serif; font-size: 11px; letter-spacing: 2px; color: var(--gold-dim); text-transform: uppercase; }
+.voted-count-row .count { font-family: 'Cinzel', serif; font-size: 14px; color: var(--text-dim); }
+.vote-confirmed { text-align: center; padding: 20px 16px; }
+.vote-confirmed svg { margin-bottom: 10px; }
+.vote-confirmed .title { font-family: 'Cinzel', serif; font-size: 15px; color: var(--gold); letter-spacing: 2px; }
+.vote-confirmed .sub { color: var(--text-dim); font-style: italic; font-size: 14px; margin-top: 4px; }
+.host-label { font-family: 'Cinzel', serif; font-size: 9px; letter-spacing: 2px; background: rgba(201,168,76,0.15); color: var(--gold-dim); border: 1px solid rgba(201,168,76,0.3); border-radius: 2px; padding: 2px 7px; display: inline-block; margin-left: 8px; vertical-align: middle; }
+.btn-row { display: flex; gap: 8px; }
+.btn-row .btn { flex: 1; }
+.player-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-top: 1px solid rgba(201,168,76,0.1); }
+.player-left { display: flex; align-items: center; gap: 10px; }
+.avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--surface2); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-family: 'Cinzel', serif; font-size: 13px; color: var(--gold-dim); flex-shrink: 0; }
+.player-name { font-size: 15px; }
+.badge-voted { font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: 1px; color: #7ab870; border: 1px solid rgba(120,180,100,0.35); background: rgba(120,180,100,0.08); border-radius: 2px; padding: 3px 8px; }
+.badge-waiting { font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: 1px; color: var(--text-dim); border: 1px solid var(--border); background: transparent; border-radius: 2px; padding: 3px 8px; }
+.btn-kick { background: transparent; border: none; color: rgba(196,48,48,0.4); cursor: pointer; padding: 6px 8px; border-radius: 2px; font-size: 16px; transition: all 0.2s; min-width: 36px; min-height: 36px; display: flex; align-items: center; justify-content: center; }
+.btn-kick:hover { color: var(--red-bright); background: rgba(196,48,48,0.1); }
+.reveal-banner { text-align: center; padding: 10px 16px 4px; font-family: 'Cinzel', serif; font-size: 11px; letter-spacing: 3px; color: var(--gold); animation: glowPulse 2s ease-in-out infinite; }
+@keyframes glowPulse { 0%, 100% { text-shadow: 0 0 8px rgba(201,168,76,0.3); } 50% { text-shadow: 0 0 20px rgba(201,168,76,0.7); } }
+#screen-kicked { text-align: center; padding: 80px 30px; }
+#screen-kicked svg { margin: 0 auto 20px; display: block; opacity: 0.5; }
+/* Loading overlay */
+#loading { position: fixed; inset: 0; background: var(--bg); z-index: 999; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; }
+#loading svg { animation: spin 1.5s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+#loading p { font-family: 'Cinzel', serif; font-size: 12px; letter-spacing: 3px; color: var(--gold-dim); }
+</style>
+</head>
+<body>
+
+<!-- Loading overlay -->
+<div id="loading">
+  <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+    <circle cx="20" cy="20" r="17" stroke="rgba(201,168,76,0.2)" stroke-width="2"/>
+    <path d="M20 3 A17 17 0 0 1 37 20" stroke="#c9a84c" stroke-width="2" stroke-linecap="round"/>
+  </svg>
+  <p>Summoning the Chamber…</p>
+</div>
+
+<div class="app">
+
+<!-- ══ HOME ══ -->
+<div id="screen-home" class="screen">
+  <div class="hero">
+    <div class="crest">
+      <svg viewBox="0 0 90 90" fill="none" xmlns="http://www.w3.org/2000/svg" width="90" height="90">
+        <path d="M45 5 L80 18 L80 52 Q80 72 45 85 Q10 72 10 52 L10 18 Z" fill="#0d1a30" stroke="#c9a84c" stroke-width="1.5"/>
+        <path d="M45 12 L73 23 L73 51 Q73 67 45 78 Q17 67 17 51 L17 23 Z" fill="#0a1220" stroke="#8a6e2e" stroke-width="0.8"/>
+        <path d="M30 35 L35 27 L40 33 L45 24 L50 33 L55 27 L60 35 L58 46 L32 46 Z" fill="none" stroke="#c9a84c" stroke-width="1.2" stroke-linejoin="round"/>
+        <line x1="28" y1="58" x2="62" y2="66" stroke="#8a6e2e" stroke-width="1"/>
+        <line x1="28" y1="66" x2="62" y2="58" stroke="#8a6e2e" stroke-width="1"/>
+        <circle cx="45" cy="52" r="2" fill="#c9a84c" opacity="0.7"/>
+        <circle cx="37" cy="55" r="1.2" fill="#c9a84c" opacity="0.4"/>
+        <circle cx="53" cy="55" r="1.2" fill="#c9a84c" opacity="0.4"/>
+        <circle cx="45" cy="6.5" r="2" fill="#c9a84c" opacity="0.6"/>
+        <circle cx="45" cy="83.5" r="2" fill="#c9a84c" opacity="0.6"/>
+      </svg>
+    </div>
+    <div class="hero-title">Avalon<br>Voting Chamber</div>
+    <div class="hero-sub">The Council Convenes</div>
+  </div>
+  <div class="ornament">✦ ✦ ✦</div>
+  <div class="card">
+    <div class="card-title">Summon a Chamber</div>
+    <div class="card-sub">You shall be the keeper of the vote</div>
+    <input type="text" id="host-name" placeholder="Your name, servant of Arthur…" maxlength="20"/>
+    <button class="btn" onclick="createRoom()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+      Open the Chamber
+    </button>
+  </div>
+  <div class="divider"><span>or</span></div>
+  <div class="card">
+    <div class="card-title">Enter a Chamber</div>
+    <div class="card-sub">Speak the code your keeper shared</div>
+    <input type="text" id="join-name" placeholder="Your name…" maxlength="20"/>
+    <input type="text" id="join-code" placeholder="Chamber Code" maxlength="4"
+      style="text-transform:uppercase; letter-spacing:8px; font-family:'Cinzel',serif; font-size:20px; text-align:center;"/>
+    <button class="btn" onclick="joinRoom()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      Enter the Chamber
+    </button>
+  </div>
+</div>
+
+<!-- ══ ROOM ══ -->
+<div id="screen-room" class="screen">
+  <div class="room-header">
+    <div>
+      <div class="room-label">Chamber Code</div>
+      <div class="room-code-display" id="room-code-display">——</div>
+      <div class="room-status" id="room-status">Awaiting the council…</div>
+    </div>
+    <button class="btn-leave" onclick="leaveRoom()">Depart</button>
+  </div>
+
+  <div class="card">
+    <div class="voted-count-row">
+      <span class="label">The Vote</span>
+      <span class="count" id="voted-count">0 / 0 cast</span>
+    </div>
+    <div id="results-hidden" class="results-hidden">
+      <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#c9a84c" stroke-width="1.5">
+        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
+        <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
+        <line x1="1" y1="1" x2="23" y2="23"/>
+      </svg>
+      <p>The verdict is sealed until all have voted</p>
+    </div>
+    <div id="results-shown" style="display:none;">
+      <div class="reveal-banner" id="reveal-banner" style="display:none;">✦ The Council Has Spoken ✦</div>
+      <div class="stat-grid">
+        <div class="stat-box approve">
+          <div class="stat-num approve" id="approve-count">0</div>
+          <div class="stat-label">✓ Approve</div>
+        </div>
+        <div class="stat-box reject">
+          <div class="stat-num reject" id="reject-count">0</div>
+          <div class="stat-label">✕ Reject</div>
+        </div>
+      </div>
+      <div class="progress-wrap">
+        <div style="position:absolute; inset:0; background:linear-gradient(to right, var(--red-mid), var(--red-bright));"></div>
+        <div class="progress-fill" id="approve-bar" style="width:0%"></div>
+      </div>
+      <div class="progress-labels">
+        <span id="approve-pct" style="color:var(--blue-text);">0% approve</span>
+        <span id="reject-pct" style="color:var(--red-text);">0% reject</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" id="vote-card">
+    <div class="card-title" style="margin-bottom:6px;">Cast Your Vote</div>
+    <div class="card-sub" style="margin-bottom:14px;">Your identity remains hidden to all</div>
+    <div class="vote-grid" id="vote-btns">
+      <button class="btn btn-approve" onclick="castVote('approve')">
+        <svg width="38" height="42" viewBox="0 0 38 42" fill="none">
+          <path d="M19 2L35 9V22Q35 34 19 40 Q3 34 3 22V9Z" fill="#1a3a78" stroke="#3a6fd8" stroke-width="1.5"/>
+          <path d="M13 20l5 5 9-9" stroke="#a8c4f8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Approve
+      </button>
+      <button class="btn btn-reject" onclick="castVote('reject')">
+        <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+          <line x1="5" y1="5" x2="35" y2="35" stroke="#f8a8a8" stroke-width="2.5" stroke-linecap="round"/>
+          <path d="M5 5 L9 5 L5 9 Z" fill="#f8a8a8"/>
+          <line x1="9" y1="16" x2="16" y2="9" stroke="#f8a8a8" stroke-width="2" stroke-linecap="round"/>
+          <line x1="35" y1="5" x2="5" y2="35" stroke="#f8a8a8" stroke-width="2.5" stroke-linecap="round"/>
+          <path d="M35 5 L31 5 L35 9 Z" fill="#f8a8a8"/>
+          <line x1="31" y1="16" x2="24" y2="9" stroke="#f8a8a8" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        Reject
+      </button>
+    </div>
+    <div id="voted-msg" style="display:none;" class="vote-confirmed">
+      <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+        <circle cx="24" cy="24" r="22" stroke="#c9a84c" stroke-width="1.5" opacity="0.5"/>
+        <path d="M14 24l8 8 14-14" stroke="#c9a84c" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <div class="title">Sealed in the Ledger</div>
+      <div class="sub">Awaiting the other servants…</div>
+    </div>
+  </div>
+
+  <div class="card" id="host-panel" style="display:none;">
+    <div style="margin-bottom:12px;">
+      <span class="card-title" style="display:inline;">Keeper Controls</span>
+      <span class="host-label">HOST</span>
+    </div>
+    <div class="btn-row" style="margin-bottom:8px;">
+      <button class="btn btn-sm" onclick="resetVotes()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+        New Round
+      </button>
+      <button class="btn btn-sm" onclick="copyLink()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+        Share Link
+      </button>
+    </div>
+    <button class="btn btn-sm btn-danger" id="reveal-btn" onclick="revealEarly()" style="display:none;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+      Reveal the Verdict Now
+    </button>
+  </div>
+
+  <div class="card">
+    <div class="voted-count-row" style="margin-bottom:8px;">
+      <span class="label">The Council</span>
+      <span class="count" id="player-count">(0)</span>
+    </div>
+    <div id="player-list"></div>
+  </div>
+</div>
+
+<!-- ══ KICKED ══ -->
+<div id="screen-kicked" class="screen">
+  <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="#c43030" stroke-width="1.5">
+    <circle cx="12" cy="12" r="10"/>
+    <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>
+  </svg>
+  <div class="hero-title" style="font-size:18px; margin-bottom:12px;">Banished from the Chamber</div>
+  <p style="color:var(--text-dim); font-style:italic; margin-bottom:30px;">The keeper has removed you from this council.</p>
+  <button class="btn" onclick="goHome()" style="max-width:280px; margin:0 auto;">Return to the Gates</button>
+</div>
+
+</div><!-- .app -->
+
+<!-- Firebase SDK -->
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getDatabase, ref, set, get, update, onValue, remove, off } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
+
+const firebaseConfig = {
+  databaseURL: "https://avalon-voting-default-rtdb.firebaseio.com"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+// Hide loading once Firebase is ready
+document.getElementById('loading').style.display = 'none';
+document.getElementById('screen-home').classList.add('active');
+
+// ── STATE ──
+const state = {
+  currentRoom: null,
+  myId: null,
+  isHost: false,
+  listeners: []
+};
+
+function genId() { return Math.random().toString(36).slice(2, 9); }
+function genCode() {
+  const c = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+  return Array.from({length:4}, () => c[Math.floor(Math.random()*c.length)]).join('');
+}
+
+function show(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + id).classList.add('active');
+}
+
+window.goHome = function() { show('home'); };
+
+// ── CREATE ROOM ──
+window.createRoom = async function() {
+  const name = document.getElementById('host-name').value.trim() || 'The Keeper';
+  const code = genCode();
+  const myId = genId();
+  state.myId = myId;
+  state.isHost = true;
+  state.currentRoom = code;
+
+  await set(ref(db, 'rooms/' + code), {
+    code,
+    revealed: false,
+    votes: { approve: 0, reject: 0 },
+    players: {
+      [myId]: { id: myId, name, voted: false, vote: null, isHost: true }
+    }
+  });
+
+  document.getElementById('room-code-display').textContent = code;
+  document.getElementById('host-panel').style.display = 'block';
+  listenToRoom(code);
+  show('room');
+
+  // Check URL for auto-join code and clear it
+  const url = new URL(window.location);
+  url.searchParams.delete('room');
+  window.history.replaceState({}, '', url);
+};
+
+// ── JOIN ROOM ──
+window.joinRoom = async function() {
+  const name = document.getElementById('join-name').value.trim() || 'A Servant';
+  const code = document.getElementById('join-code').value.trim().toUpperCase();
+  if (!code || code.length !== 4) { alert('Enter the 4-letter chamber code.'); return; }
+
+  const snap = await get(ref(db, 'rooms/' + code));
+  if (!snap.exists()) { alert('No chamber found with that code. Ask your keeper for the correct one.'); return; }
+
+  const myId = genId();
+  state.myId = myId;
+  state.isHost = false;
+  state.currentRoom = code;
+
+  await set(ref(db, 'rooms/' + code + '/players/' + myId), {
+    id: myId, name, voted: false, vote: null, isHost: false
+  });
+
+  document.getElementById('room-code-display').textContent = code;
+  document.getElementById('host-panel').style.display = 'none';
+  listenToRoom(code);
+  show('room');
+};
+
+// ── LISTEN TO ROOM (real-time) ──
+function listenToRoom(code) {
+  // Detach any old listeners
+  state.listeners.forEach(fn => fn());
+  state.listeners = [];
+
+  const roomRef = ref(db, 'rooms/' + code);
+  const unsub = onValue(roomRef, (snap) => {
+    if (!snap.exists()) {
+      // Room was deleted (host left)
+      show('home');
+      return;
+    }
+    const room = snap.val();
+    // Check if we were kicked
+    if (!room.players || !room.players[state.myId]) {
+      if (state.currentRoom) {
+        state.currentRoom = null;
+        show('screen-kicked');
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById('screen-kicked').classList.add('active');
+      }
+      return;
+    }
+    renderRoom(room);
+  });
+  state.listeners.push(() => off(roomRef));
+}
+
+// ── RENDER ROOM ──
+function renderRoom(room) {
+  const players = room.players ? Object.values(room.players) : [];
+  const total = players.length;
+  const votedCount = players.filter(p => p.voted).length;
+  const approve = room.votes?.approve || 0;
+  const reject = room.votes?.reject || 0;
+  const totalVotes = approve + reject;
+  const approvePct = totalVotes ? Math.round(approve / totalVotes * 100) : 0;
+  const rejectPct = totalVotes ? 100 - approvePct : 0;
+  const allVoted = total > 0 && players.every(p => p.voted);
+  const showResults = room.revealed || allVoted;
+
+  document.getElementById('voted-count').textContent = votedCount + ' / ' + total + ' cast';
+  if (showResults && allVoted) {
+    document.getElementById('room-status').textContent = 'The verdict has been revealed';
+  } else if (showResults) {
+    document.getElementById('room-status').textContent = 'The keeper revealed the vote';
+  } else {
+    document.getElementById('room-status').textContent = 'Awaiting the council…';
+  }
+
+  document.getElementById('results-hidden').style.display = showResults ? 'none' : 'block';
+  document.getElementById('results-shown').style.display = showResults ? 'block' : 'none';
+  document.getElementById('reveal-banner').style.display = showResults ? 'block' : 'none';
+
+  if (showResults) {
+    document.getElementById('approve-count').textContent = approve;
+    document.getElementById('reject-count').textContent = reject;
+    document.getElementById('approve-bar').style.width = approvePct + '%';
+    document.getElementById('approve-pct').textContent = approvePct + '% approve';
+    document.getElementById('reject-pct').textContent = rejectPct + '% reject';
+  }
+
+  const myPlayer = room.players?.[state.myId];
+  const hasVoted = myPlayer && myPlayer.voted;
+  document.getElementById('vote-btns').style.display = hasVoted ? 'none' : 'grid';
+  document.getElementById('voted-msg').style.display = hasVoted ? 'block' : 'none';
+
+  if (state.isHost) {
+    const showReveal = !showResults && votedCount > 0;
+    document.getElementById('reveal-btn').style.display = showReveal ? 'block' : 'none';
+  }
+
+  const playerList = document.getElementById('player-list');
+  playerList.innerHTML = players.map(p => `
+    <div class="player-item">
+      <div class="player-left">
+        <div class="avatar">${p.name.charAt(0).toUpperCase()}</div>
+        <div>
+          <span class="player-name">${p.name}</span>
+          ${p.isHost ? '<span class="host-label">HOST</span>' : ''}
+        </div>
+      </div>
+      <div style="display:flex; align-items:center; gap:6px;">
+        ${p.voted ? '<span class="badge-voted">✓ Voted</span>' : '<span class="badge-waiting">Waiting</span>'}
+        ${state.isHost && !p.isHost ? `<button class="btn-kick" onclick="kickPlayer('${p.id}')">✕</button>` : ''}
+      </div>
+    </div>
+  `).join('');
+  document.getElementById('player-count').textContent = '(' + total + ')';
+}
+
+// ── CAST VOTE ──
+window.castVote = async function(choice) {
+  const code = state.currentRoom;
+  if (!code) return;
+  const snap = await get(ref(db, 'rooms/' + code + '/players/' + state.myId));
+  if (!snap.exists() || snap.val().voted) return;
+
+  await update(ref(db, 'rooms/' + code + '/players/' + state.myId), { voted: true, vote: choice });
+  await update(ref(db, 'rooms/' + code + '/votes'), {
+    [choice]: (await get(ref(db, 'rooms/' + code + '/votes/' + choice))).val() + 1
+  });
+};
+
+// ── RESET VOTES ──
+window.resetVotes = async function() {
+  const code = state.currentRoom;
+  if (!code || !state.isHost) return;
+  const snap = await get(ref(db, 'rooms/' + code + '/players'));
+  const players = snap.val() || {};
+  const updates = {};
+  Object.keys(players).forEach(id => {
+    updates['rooms/' + code + '/players/' + id + '/voted'] = false;
+    updates['rooms/' + code + '/players/' + id + '/vote'] = null;
+  });
+  updates['rooms/' + code + '/votes/approve'] = 0;
+  updates['rooms/' + code + '/votes/reject'] = 0;
+  updates['rooms/' + code + '/revealed'] = false;
+  await update(ref(db), updates);
+};
+
+// ── REVEAL EARLY ──
+window.revealEarly = async function() {
+  const code = state.currentRoom;
+  if (!code || !state.isHost) return;
+  await update(ref(db, 'rooms/' + code), { revealed: true });
+};
+
+// ── KICK PLAYER ──
+window.kickPlayer = async function(id) {
+  const code = state.currentRoom;
+  if (!code || !state.isHost) return;
+  const snap = await get(ref(db, 'rooms/' + code + '/players/' + id));
+  if (!snap.exists()) return;
+  const player = snap.val();
+  if (player.isHost) return;
+  if (player.voted && player.vote) {
+    const voteSnap = await get(ref(db, 'rooms/' + code + '/votes/' + player.vote));
+    await update(ref(db, 'rooms/' + code + '/votes'), {
+      [player.vote]: Math.max(0, (voteSnap.val() || 1) - 1)
+    });
+  }
+  await remove(ref(db, 'rooms/' + code + '/players/' + id));
+};
+
+// ── LEAVE ROOM ──
+window.leaveRoom = async function() {
+  const code = state.currentRoom;
+  if (!code) return;
+  state.listeners.forEach(fn => fn());
+  state.listeners = [];
+  if (state.isHost) {
+    await remove(ref(db, 'rooms/' + code));
+  } else {
+    const myPlayer = (await get(ref(db, 'rooms/' + code + '/players/' + state.myId))).val();
+    if (myPlayer?.voted && myPlayer?.vote) {
+      const cur = (await get(ref(db, 'rooms/' + code + '/votes/' + myPlayer.vote))).val() || 0;
+      await update(ref(db, 'rooms/' + code + '/votes'), { [myPlayer.vote]: Math.max(0, cur - 1) });
+    }
+    await remove(ref(db, 'rooms/' + code + '/players/' + state.myId));
+  }
+  state.currentRoom = null;
+  state.isHost = false;
+  show('home');
+};
+
+// ── SHARE LINK ──
+window.copyLink = function() {
+  const code = state.currentRoom;
+  if (!code) return;
+  const url = window.location.origin + window.location.pathname + '?room=' + code;
+  navigator.clipboard.writeText(url)
+    .then(() => alert('Link copied! Share it with your council:\n' + url))
+    .catch(() => alert('Share this link:\n' + url));
+};
+
+// ── AUTO-JOIN FROM URL ──
+const urlParams = new URLSearchParams(window.location.search);
+const roomFromUrl = urlParams.get('room');
+if (roomFromUrl) {
+  document.getElementById('join-code').value = roomFromUrl.toUpperCase();
+}
+
+// ── INPUT FILTER ──
+document.getElementById('join-code').addEventListener('input', function() {
+  this.value = this.value.toUpperCase().replace(/[^A-Z]/g, '');
+});
+
+</script>
+</body>
+</html>
