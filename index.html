@@ -310,7 +310,7 @@ input[type=text]::placeholder { color: var(--text-dim); font-style: italic; }
 <!-- Firebase SDK -->
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-import { getDatabase, ref, set, get, update, onValue, remove, off } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
+import { getDatabase, ref, set, get, update, onValue, remove, off, runTransaction } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
 
 const firebaseConfig = {
   databaseURL: "https://avalon-voting-default-rtdb.firebaseio.com"
@@ -331,7 +331,16 @@ const state = {
   listeners: []
 };
 
-function genId() { return Math.random().toString(36).slice(2, 9); }
+function genId() {
+  // Check if this device already has an ID saved
+  let id = localStorage.getItem('avalon_player_id');
+  if (!id) {
+    // First time — generate a new one and save it forever
+    id = Math.random().toString(36).slice(2, 9) + Math.random().toString(36).slice(2, 9);
+    localStorage.setItem('avalon_player_id', id);
+  }
+  return id;
+}
 function genCode() {
   const c = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
   return Array.from({length:4}, () => c[Math.floor(Math.random()*c.length)]).join('');
@@ -353,6 +362,9 @@ window.createRoom = async function() {
   state.isHost = true;
   state.currentRoom = code;
 
+  // Save session so if they switch apps they can rejoin as same player
+  localStorage.setItem('avalon_session', JSON.stringify({ code, myId, isHost: true, name }));
+
   await set(ref(db, 'rooms/' + code), {
     code,
     revealed: false,
@@ -367,7 +379,6 @@ window.createRoom = async function() {
   listenToRoom(code);
   show('room');
 
-  // Check URL for auto-join code and clear it
   const url = new URL(window.location);
   url.searchParams.delete('room');
   window.history.replaceState({}, '', url);
@@ -382,14 +393,21 @@ window.joinRoom = async function() {
   const snap = await get(ref(db, 'rooms/' + code));
   if (!snap.exists()) { alert('No chamber found with that code. Ask your keeper for the correct one.'); return; }
 
+  // genId() returns the same ID every time for this device (saved in localStorage)
   const myId = genId();
   state.myId = myId;
   state.isHost = false;
   state.currentRoom = code;
 
-  await set(ref(db, 'rooms/' + code + '/players/' + myId), {
-    id: myId, name, voted: false, vote: null, isHost: false
-  });
+  // Check if this device is already in the room — if so, just reconnect, don't add again
+  const existingSnap = await get(ref(db, 'rooms/' + code + '/players/' + myId));
+  if (!existingSnap.exists()) {
+    // Genuinely new player — add them
+    await set(ref(db, 'rooms/' + code + '/players/' + myId), {
+      id: myId, name, voted: false, vote: null, isHost: false
+    });
+  }
+  // If they already exist — just reconnect silently, no duplicate created
 
   document.getElementById('room-code-display').textContent = code;
   document.getElementById('host-panel').style.display = 'none';
@@ -496,9 +514,13 @@ window.castVote = async function(choice) {
   const snap = await get(ref(db, 'rooms/' + code + '/players/' + state.myId));
   if (!snap.exists() || snap.val().voted) return;
 
+  // Mark player as voted
   await update(ref(db, 'rooms/' + code + '/players/' + state.myId), { voted: true, vote: choice });
-  await update(ref(db, 'rooms/' + code + '/votes'), {
-    [choice]: (await get(ref(db, 'rooms/' + code + '/votes/' + choice))).val() + 1
+
+  // Use transaction to safely increment vote count — prevents race condition
+  // where two people voting simultaneously overwrite each other
+  await runTransaction(ref(db, 'rooms/' + code + '/votes/' + choice), (current) => {
+    return (current || 0) + 1;
   });
 };
 
