@@ -332,12 +332,13 @@ const state = {
 };
 
 function genId() {
-  // Check if this device already has an ID saved
-  let id = localStorage.getItem('avalon_player_id');
+  // Each tab/session gets its own unique ID stored for THIS session only
+  // sessionStorage is per-tab, so two people on same phone get different IDs
+  // but if YOU switch apps and come back, your tab still has the same ID
+  let id = sessionStorage.getItem('avalon_player_id');
   if (!id) {
-    // First time — generate a new one and save it forever
-    id = Math.random().toString(36).slice(2, 9) + Math.random().toString(36).slice(2, 9);
-    localStorage.setItem('avalon_player_id', id);
+    id = Date.now().toString(36) + Math.random().toString(36).slice(2, 9);
+    sessionStorage.setItem('avalon_player_id', id);
   }
   return id;
 }
@@ -361,9 +362,6 @@ window.createRoom = async function() {
   state.myId = myId;
   state.isHost = true;
   state.currentRoom = code;
-
-  // Save session so if they switch apps they can rejoin as same player
-  localStorage.setItem('avalon_session', JSON.stringify({ code, myId, isHost: true, name }));
 
   await set(ref(db, 'rooms/' + code), {
     code,
